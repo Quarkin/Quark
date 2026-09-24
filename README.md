@@ -1,8 +1,11 @@
+Quark Launcher fork of shade launcher all credits goes to them
+its my personal work which i am learning and sharing .. feel free to use them as u want
+
 # Shade Launcher
 
 **Make your phone feel like home. Free, open source, no ads.**
 
-By Amir Zaidi
+By Amir Zaidi 
 
 ## Links
 
