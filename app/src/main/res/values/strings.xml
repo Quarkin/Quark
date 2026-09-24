@@ -23,4 +23,13 @@
     <string name="add_app_shortcut">Add app shortcut</string>
     <string name="set_wallpaper">Set wallpaper</string>
     <string name="remove_pinned_app">Remove from home screen?</string>
+    <string name="accessibility_service_description">Enables double-tap to lock the screen from Quark Launcher.</string>
+    <string name="accessibility_permission_toast">Please enable Quark Launcher in Accessibility settings to allow double-tap to lock.</string>
+    <string name="home_settings_title">Home settings</string>
+    <string name="double_tap_to_sleep_title">Double Tap to Sleep</string>
+    <string name="double_tap_to_sleep_desc">Double tap empty space on home screen to turn off and lock display</string>
+    <string name="themed_icons_title">Themed Icons</string>
+    <string name="themed_icons_desc">Tint app icons with wallpaper colors (Material You)</string>
+    <string name="search_bar_dock_title">Search Bar in Dock</string>
+    <string name="search_bar_dock_desc">Show persistent Google search bar below dock icons</string>
 </resources>

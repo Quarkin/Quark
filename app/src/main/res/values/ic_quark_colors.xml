@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_quark_background">#121316</color>
+    <color name="ic_quark_primary">#A8C7FA</color>
+    <color name="ic_quark_core">#D3E3FD</color>
+</resources>

@@ -13,7 +13,12 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.launcher3.iconpack.IconPackInfo
+import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
+import com.android.launcher3.repository.AppOverride
+import com.android.launcher3.repository.AppOverridesRepository
+import com.android.launcher3.util.IconThemer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,6 +35,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private val packageManager: PackageManager = application.packageManager
 
+    val overridesRepository = AppOverridesRepository(application)
+    val iconPackManager = IconPackManager(application)
+
+    val overrides: StateFlow<Map<String, AppOverride>> = overridesRepository.overrides
+
+    private val _installedIconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
+    val installedIconPacks: StateFlow<List<IconPackInfo>> = _installedIconPacks
+
+    private val _globalIconPack = MutableStateFlow<String?>(prefs.getString("global_icon_pack", null))
+    val globalIconPack: StateFlow<String?> = _globalIconPack
+
+    private val _globalAppFilter = MutableStateFlow<Map<String, String>>(emptyMap())
+    val globalAppFilter: StateFlow<Map<String, String>> = _globalAppFilter
+
     private val _allApps = MutableStateFlow<List<AppItem>>(emptyList())
     val allApps: StateFlow<List<AppItem>> = _allApps
 
@@ -45,13 +64,29 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _isDrawerOpen = MutableStateFlow(false)
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen
 
-    val filteredApps: StateFlow<List<AppItem>> = combine(_allApps, _searchQuery) { apps, query ->
+    private val _isThemedIcons = MutableStateFlow(prefs.getBoolean("themed_icons", true))
+    val isThemedIcons: StateFlow<Boolean> = _isThemedIcons
+
+    private val _isDoubleTapToSleep = MutableStateFlow(prefs.getBoolean("double_tap_to_sleep", true))
+    val isDoubleTapToSleep: StateFlow<Boolean> = _isDoubleTapToSleep
+
+    private val _isShowDockSearch = MutableStateFlow(prefs.getBoolean("show_dock_search", true))
+    val isShowDockSearch: StateFlow<Boolean> = _isShowDockSearch
+
+    // Predictive back gesture states (0f..1f)
+    private val _backProgress = MutableStateFlow(0f)
+    val backProgress: StateFlow<Float> = _backProgress
+
+    val filteredApps: StateFlow<List<AppItem>> = combine(_allApps, _searchQuery, overrides) { apps, query, appOverrides ->
         if (query.isBlank()) {
             apps
         } else {
-            apps.filter {
-                it.label.contains(query, ignoreCase = true) ||
-                        it.packageName.contains(query, ignoreCase = true)
+            apps.filter { app ->
+                val customLabel = appOverrides[app.componentKey]?.customLabel
+                val effectiveLabel = if (!customLabel.isNullOrBlank()) customLabel else app.label
+                effectiveLabel.contains(query, ignoreCase = true) ||
+                        app.label.contains(query, ignoreCase = true) ||
+                        app.packageName.contains(query, ignoreCase = true)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -59,12 +94,36 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val packageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             loadApps()
+            refreshInstalledIconPacks()
+        }
+    }
+
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+        when (key) {
+            "themed_icons" -> {
+                _isThemedIcons.value = sp.getBoolean("themed_icons", true)
+                IconThemer.clearCache()
+            }
+            "double_tap_to_sleep" -> {
+                _isDoubleTapToSleep.value = sp.getBoolean("double_tap_to_sleep", true)
+            }
+            "show_dock_search" -> {
+                _isShowDockSearch.value = sp.getBoolean("show_dock_search", true)
+            }
+            "global_icon_pack" -> {
+                val pack = sp.getString("global_icon_pack", null)
+                _globalIconPack.value = pack
+                loadGlobalAppFilter(pack)
+            }
         }
     }
 
     init {
+        prefs.registerOnSharedPreferenceChangeListener(prefListener)
         registerPackageReceiver()
         loadApps()
+        refreshInstalledIconPacks()
+        loadGlobalAppFilter(_globalIconPack.value)
     }
 
     private fun registerPackageReceiver() {
@@ -87,9 +146,85 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun setDrawerOpen(open: Boolean) {
         _isDrawerOpen.value = open
+        _backProgress.value = 0f
         if (!open) {
             _searchQuery.value = ""
         }
+    }
+
+    fun updateBackProgress(progress: Float) {
+        _backProgress.value = progress.coerceIn(0f, 1f)
+    }
+
+    fun toggleThemedIcons() {
+        val newValue = !_isThemedIcons.value
+        _isThemedIcons.value = newValue
+        prefs.edit().putBoolean("themed_icons", newValue).apply()
+        IconThemer.clearCache()
+    }
+
+    fun toggleDoubleTapToSleep() {
+        val newValue = !_isDoubleTapToSleep.value
+        _isDoubleTapToSleep.value = newValue
+        prefs.edit().putBoolean("double_tap_to_sleep", newValue).apply()
+    }
+
+    fun toggleShowDockSearch() {
+        val newValue = !_isShowDockSearch.value
+        _isShowDockSearch.value = newValue
+        prefs.edit().putBoolean("show_dock_search", newValue).apply()
+    }
+
+    fun setGlobalIconPack(packageName: String?) {
+        _globalIconPack.value = packageName
+        if (packageName.isNullOrBlank()) {
+            prefs.edit().remove("global_icon_pack").apply()
+        } else {
+            prefs.edit().putString("global_icon_pack", packageName).apply()
+        }
+        loadGlobalAppFilter(packageName)
+    }
+
+    private fun loadGlobalAppFilter(packageName: String?) {
+        viewModelScope.launch {
+            if (packageName.isNullOrBlank()) {
+                _globalAppFilter.value = emptyMap()
+            } else {
+                _globalAppFilter.value = iconPackManager.getAppFilter(packageName)
+            }
+            IconThemer.clearCache()
+        }
+    }
+
+    fun refreshInstalledIconPacks() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val packs = iconPackManager.getInstalledIconPacks()
+            _installedIconPacks.value = packs
+        }
+    }
+
+    suspend fun getDrawablesForIconPack(packageName: String): List<String> {
+        return iconPackManager.getAvailableDrawables(packageName)
+    }
+
+    fun saveAppOverride(
+        componentKey: String,
+        customLabel: String?,
+        customIconPack: String?,
+        customDrawableName: String?
+    ) {
+        val override = AppOverride(
+            customLabel = customLabel?.trim()?.ifBlank { null },
+            customIconPackPackage = customIconPack?.trim()?.ifBlank { null },
+            customIconDrawableName = customDrawableName?.trim()?.ifBlank { null }
+        )
+        overridesRepository.setOverride(componentKey, override)
+        IconThemer.clearCache()
+    }
+
+    fun resetAppOverride(componentKey: String) {
+        overridesRepository.removeOverride(componentKey)
+        IconThemer.clearCache()
     }
 
     fun setSearchQuery(query: String) {
@@ -124,9 +259,18 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private fun refreshPinnedAndDock(apps: List<AppItem>) {
         val appMap = apps.associateBy { it.componentKey }
 
-        // Pinned apps
-        val pinnedKeys = prefs.getStringSet("pinned_keys", null) ?: emptySet()
-        _pinnedApps.value = pinnedKeys.mapNotNull { appMap[it] }
+        // Pinned apps on 5x5 grid (up to 25 items)
+        val savedPinnedKeys = prefs.getStringSet("pinned_keys", null)
+        val pinnedList = mutableListOf<AppItem>()
+
+        if (savedPinnedKeys != null) {
+            savedPinnedKeys.mapNotNull { appMap[it] }.forEach { pinnedList.add(it) }
+        } else {
+            val sampleApps = apps.take(10)
+            pinnedList.addAll(sampleApps)
+            prefs.edit().putStringSet("pinned_keys", sampleApps.map { it.componentKey }.toSet()).apply()
+        }
+        _pinnedApps.value = pinnedList.take(25)
 
         // Dock apps (5 slots)
         val savedDockKeys = prefs.getString("dock_keys", null)?.split(";")?.filter { it.isNotBlank() }
@@ -138,7 +282,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        // If dock has fewer than 5 apps, pick intelligent defaults
         if (dockList.size < 5 && apps.isNotEmpty()) {
             val preferredCategories = listOf(
                 listOf("dialer", "phone"),
@@ -165,7 +308,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // Still under 5? Fill with remaining apps
             for (app in apps) {
                 if (dockList.size >= 5) break
                 if (!usedKeys.contains(app.componentKey)) {
@@ -180,7 +322,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun pinApp(app: AppItem) {
         val current = _pinnedApps.value.toMutableList()
-        if (!current.any { it.componentKey == app.componentKey }) {
+        if (current.size < 25 && !current.any { it.componentKey == app.componentKey }) {
             current.add(app)
             _pinnedApps.value = current
             val keys = current.map { it.componentKey }.toSet()
@@ -238,8 +380,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     override fun onCleared() {
         super.onCleared()
         try {
+            prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
+        } catch (ignored: Exception) {
+        }
+        try {
             getApplication<Application>().unregisterReceiver(packageReceiver)
         } catch (ignored: Exception) {
         }
+        IconThemer.clearCache()
     }
 }
