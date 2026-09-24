@@ -7,7 +7,7 @@ __Quark Launcher__ is a custom fork of the excellent [Shade Launcher](https://gi
 I am building and sharing this as an open-source project—feel free to download, use, and modify the code however you want!
 
 ### Download
-_You can download the latest APK from the [GitHub Releases](https://github.com/Quarkin/Quark/releases) page._
+_You can download the latest APK from the [GitHub Releases](https://github.com/Quarkin/Quark/releases) page. (Will start asap)
 
 ---
 
