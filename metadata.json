@@ -1,0 +1,6 @@
+{
+  "name": "Quark Launcher",
+  "description": "A fast, lightweight, and customizable Android launcher with app drawer, pinned apps, and wallpaper support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
