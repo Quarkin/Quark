@@ -6,9 +6,11 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 
+@Immutable
 data class AppItem(
     val label: String,
     val packageName: String,

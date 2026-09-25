@@ -5,14 +5,19 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.content.res.XmlResourceParser
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.Immutable
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
 
+@Immutable
 data class IconPackInfo(
     val packageName: String,
     val label: String,
@@ -37,6 +42,46 @@ class IconPackManager(private val context: Context) {
             "com.teslacoilsw.launcher.THEME",
             "com.anddoes.launcher.THEME"
         )
+
+        fun rasterizeToMax(
+            drawable: Drawable,
+            resources: android.content.res.Resources? = null,
+            maxSize: Int = 144
+        ): Drawable {
+            if (drawable is BitmapDrawable && drawable.bitmap != null) {
+                val b = drawable.bitmap
+                if (b.width <= maxSize && b.height <= maxSize) {
+                    return drawable
+                }
+            }
+            return try {
+                val intrinsicWidth = drawable.intrinsicWidth.takeIf { it > 0 } ?: maxSize
+                val intrinsicHeight = drawable.intrinsicHeight.takeIf { it > 0 } ?: maxSize
+
+                val (targetWidth, targetHeight) = if (intrinsicWidth > maxSize || intrinsicHeight > maxSize) {
+                    val ratio = intrinsicWidth.toFloat() / intrinsicHeight.toFloat()
+                    if (intrinsicWidth >= intrinsicHeight) {
+                        maxSize to ((maxSize / ratio).toInt().coerceAtLeast(1))
+                    } else {
+                        ((maxSize * ratio).toInt().coerceAtLeast(1)) to maxSize
+                    }
+                } else {
+                    intrinsicWidth to intrinsicHeight
+                }
+
+                val bitmap = Bitmap.createBitmap(
+                    targetWidth,
+                    targetHeight,
+                    Bitmap.Config.ARGB_8888
+                )
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, targetWidth, targetHeight)
+                drawable.draw(canvas)
+                BitmapDrawable(resources, bitmap)
+            } catch (e: Exception) {
+                drawable
+            }
+        }
     }
 
     fun getInstalledIconPacks(): List<IconPackInfo> {
@@ -131,11 +176,16 @@ class IconPackManager(private val context: Context) {
     }
 
     fun loadDrawable(iconPackPackage: String, drawableName: String): Drawable? {
+        val cacheKey = "$iconPackPackage:$drawableName"
+        GlobalIconCache.bitmapCache.get(cacheKey)?.let { return it }
         return try {
             val packContext = context.createPackageContext(iconPackPackage, Context.CONTEXT_IGNORE_SECURITY)
             val resId = packContext.resources.getIdentifier(drawableName, "drawable", iconPackPackage)
             if (resId != 0) {
-                packContext.resources.getDrawable(resId, null)
+                val rawDrawable = packContext.resources.getDrawable(resId, null)
+                val downscaled = rasterizeToMax(rawDrawable, packContext.resources, 144)
+                GlobalIconCache.bitmapCache.put(cacheKey, downscaled)
+                downscaled
             } else {
                 null
             }
@@ -145,7 +195,4 @@ class IconPackManager(private val context: Context) {
     }
 }
 
-object GlobalIconCache {
-    val resourceCache = mutableMapOf<String, android.content.res.Resources>()
-    val bitmapCache = android.util.LruCache<String, android.graphics.drawable.Drawable>((Runtime.getRuntime().maxMemory() / 1024).toInt() / 8)
-}
+object GlobalIconCache { val resourceCache = mutableMapOf<String, android.content.res.Resources>(); val bitmapCache = android.util.LruCache<String, android.graphics.drawable.Drawable>((Runtime.getRuntime().maxMemory() / 1024).toInt() / 8) }

@@ -75,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -215,6 +216,19 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    if (isDrawerOpen) {
+                        val workspaceScale = 0.96f + (backProgress * 0.04f)
+                        val workspaceAlpha = 0.9f + (backProgress * 0.1f)
+                        scaleX = workspaceScale
+                        scaleY = workspaceScale
+                        alpha = workspaceAlpha
+                    } else {
+                        scaleX = 1f
+                        scaleY = 1f
+                        alpha = 1f
+                    }
+                }
                 .padding(
                     top = safeDrawing.calculateTopPadding(),
                     bottom = safeDrawing.calculateBottomPadding()

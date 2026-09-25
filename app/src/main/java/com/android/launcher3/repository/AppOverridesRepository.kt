@@ -2,11 +2,13 @@ package com.android.launcher3.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
+@Immutable
 data class AppOverride(
     val customLabel: String? = null,
     val customIconPackPackage: String? = null,

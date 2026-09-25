@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.launcher3.iconpack.IconPackInfo
 import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
+import com.android.launcher3.model.ImmutableList
 import com.android.launcher3.repository.AppOverride
 import com.android.launcher3.repository.AppOverridesRepository
 import com.android.launcher3.util.IconThemer
@@ -40,8 +41,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     val overrides: StateFlow<Map<String, AppOverride>> = overridesRepository.overrides
 
-    private val _installedIconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
-    val installedIconPacks: StateFlow<List<IconPackInfo>> = _installedIconPacks
+    private val _installedIconPacks = MutableStateFlow<ImmutableList<IconPackInfo>>(ImmutableList.empty())
+    val installedIconPacks: StateFlow<ImmutableList<IconPackInfo>> = _installedIconPacks
 
     private val _globalIconPack = MutableStateFlow<String?>(prefs.getString("global_icon_pack", null))
     val globalIconPack: StateFlow<String?> = _globalIconPack
@@ -49,14 +50,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _globalAppFilter = MutableStateFlow<Map<String, String>>(emptyMap())
     val globalAppFilter: StateFlow<Map<String, String>> = _globalAppFilter
 
-    private val _allApps = MutableStateFlow<List<AppItem>>(emptyList())
-    val allApps: StateFlow<List<AppItem>> = _allApps
+    private val _allApps = MutableStateFlow<ImmutableList<AppItem>>(ImmutableList.empty())
+    val allApps: StateFlow<ImmutableList<AppItem>> = _allApps
 
-    private val _pinnedApps = MutableStateFlow<List<AppItem>>(emptyList())
-    val pinnedApps: StateFlow<List<AppItem>> = _pinnedApps
+    private val _pinnedApps = MutableStateFlow<ImmutableList<AppItem>>(ImmutableList.empty())
+    val pinnedApps: StateFlow<ImmutableList<AppItem>> = _pinnedApps
 
-    private val _dockApps = MutableStateFlow<List<AppItem>>(emptyList())
-    val dockApps: StateFlow<List<AppItem>> = _dockApps
+    private val _dockApps = MutableStateFlow<ImmutableList<AppItem>>(ImmutableList.empty())
+    val dockApps: StateFlow<ImmutableList<AppItem>> = _dockApps
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -77,9 +78,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _backProgress = MutableStateFlow(0f)
     val backProgress: StateFlow<Float> = _backProgress
 
-    val filteredApps: StateFlow<List<AppItem>> = combine(_allApps, _searchQuery, overrides) { apps, query, appOverrides ->
-        if (query.isBlank()) {
-            apps
+    val filteredApps: StateFlow<ImmutableList<AppItem>> = combine(_allApps, _searchQuery, overrides) { apps, query, appOverrides ->
+        val list = if (query.isBlank()) {
+            apps.items
         } else {
             apps.filter { app ->
                 val customLabel = appOverrides[app.componentKey]?.customLabel
@@ -89,12 +90,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         app.packageName.contains(query, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ImmutableList(list)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ImmutableList.empty())
 
     private val packageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            loadApps()
-            refreshInstalledIconPacks()
+            when (intent?.action) {
+                Intent.ACTION_PACKAGE_ADDED,
+                Intent.ACTION_PACKAGE_REMOVED,
+                Intent.ACTION_PACKAGE_CHANGED,
+                Intent.ACTION_PACKAGE_REPLACED -> {
+                    loadApps()
+                    refreshInstalledIconPacks()
+                }
+            }
         }
     }
 
@@ -131,16 +140,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
             addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
             addDataScheme("package")
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getApplication<Application>().registerReceiver(
-                packageReceiver,
-                filter,
-                Context.RECEIVER_EXPORTED
-            )
-        } else {
-            getApplication<Application>().registerReceiver(packageReceiver, filter)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getApplication<Application>().registerReceiver(
+                    packageReceiver,
+                    filter,
+                    Context.RECEIVER_EXPORTED
+                )
+            } else {
+                getApplication<Application>().registerReceiver(packageReceiver, filter)
+            }
+        } catch (ignored: Exception) {
         }
     }
 
@@ -199,7 +212,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun refreshInstalledIconPacks() {
         viewModelScope.launch(Dispatchers.IO) {
             val packs = iconPackManager.getInstalledIconPacks()
-            _installedIconPacks.value = packs
+            _installedIconPacks.value = ImmutableList(packs)
         }
     }
 
@@ -251,7 +264,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }.distinctBy { it.componentKey }.sortedBy { it.label.lowercase() }
             }
 
-            _allApps.value = apps
+            _allApps.value = ImmutableList(apps)
             refreshPinnedAndDock(apps)
         }
     }
@@ -270,7 +283,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             pinnedList.addAll(sampleApps)
             prefs.edit().putStringSet("pinned_keys", sampleApps.map { it.componentKey }.toSet()).apply()
         }
-        _pinnedApps.value = pinnedList.take(25)
+        _pinnedApps.value = ImmutableList(pinnedList.take(25))
 
         // Dock apps (5 slots)
         val savedDockKeys = prefs.getString("dock_keys", null)?.split(";")?.filter { it.isNotBlank() }
@@ -317,14 +330,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        _dockApps.value = dockList.take(5)
+        _dockApps.value = ImmutableList(dockList.take(5))
     }
 
     fun pinApp(app: AppItem) {
         val current = _pinnedApps.value.toMutableList()
         if (current.size < 25 && !current.any { it.componentKey == app.componentKey }) {
             current.add(app)
-            _pinnedApps.value = current
+            _pinnedApps.value = ImmutableList(current)
             val keys = current.map { it.componentKey }.toSet()
             prefs.edit().putStringSet("pinned_keys", keys).apply()
         }
@@ -332,7 +345,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun unpinApp(app: AppItem) {
         val current = _pinnedApps.value.filter { it.componentKey != app.componentKey }
-        _pinnedApps.value = current
+        _pinnedApps.value = ImmutableList(current)
         val keys = current.map { it.componentKey }.toSet()
         prefs.edit().putStringSet("pinned_keys", keys).apply()
     }
@@ -344,7 +357,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         current[slotIndex] = app
         val newDock = current.take(5)
-        _dockApps.value = newDock
+        _dockApps.value = ImmutableList(newDock)
         prefs.edit().putString("dock_keys", newDock.joinToString(";") { it.componentKey }).apply()
     }
 

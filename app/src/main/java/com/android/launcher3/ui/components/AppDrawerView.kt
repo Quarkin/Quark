@@ -55,6 +55,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,12 +78,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
+import com.android.launcher3.model.ImmutableList
 import com.android.launcher3.repository.AppOverride
 import com.android.launcher3.util.IconThemer
 
 @Composable
 fun AppDrawerView(
-    apps: List<AppItem>,
+    apps: ImmutableList<AppItem> = ImmutableList.empty(),
     searchQuery: String,
     isThemedIcons: Boolean,
     backProgress: Float,
@@ -106,32 +108,37 @@ fun AppDrawerView(
     val containerColor = MaterialTheme.colorScheme.secondaryContainer
     val tintColor = MaterialTheme.colorScheme.onSecondaryContainer
 
-    // Predictive back shrinkage & rounding
-    val scale = remember(backProgress) { 1f - (backProgress * 0.12f) }
-    val cornerRadius = remember(backProgress) { (backProgress * 32f).dp }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
 
     Surface(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer {
+                val scale = 1f - (backProgress * 0.12f)
+                val cornerRadius = (backProgress * 32f).dp
                 scaleX = scale
                 scaleY = scale
+                translationY = dragOffsetY
+                alpha = 1f - (backProgress * 0.15f)
                 clip = true
                 shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
             }
             .background(androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .pointerInput(Unit) {
-                var dragSum = 0f
                 detectVerticalDragGestures(
-                    onDragStart = { dragSum = 0f },
+                    onDragStart = { dragOffsetY = 0f },
                     onDragEnd = {
-                        if (dragSum > 50f) {
+                        if (dragOffsetY > 60f) {
                             onCloseDrawer()
                         }
-                        dragSum = 0f
+                        dragOffsetY = 0f
                     },
-                    onVerticalDrag = { _, dragAmount ->
-                        dragSum += dragAmount
+                    onDragCancel = { dragOffsetY = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        if (dragAmount > 0 || dragOffsetY > 0) {
+                            change.consume()
+                            dragOffsetY = (dragOffsetY + dragAmount).coerceAtLeast(0f)
+                        }
                     }
                 )
             }

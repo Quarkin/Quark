@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import com.android.launcher3.iconpack.IconPackInfo
 import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
+import com.android.launcher3.model.ImmutableList
 import com.android.launcher3.repository.AppOverride
 import com.android.launcher3.util.IconThemer
 
@@ -77,7 +78,7 @@ fun EditAppDialog(
     app: AppItem,
     initialOverride: AppOverride?,
     iconPackManager: IconPackManager,
-    installedIconPacks: List<IconPackInfo>,
+    installedIconPacks: ImmutableList<IconPackInfo> = ImmutableList.empty(),
     onDismiss: () -> Unit,
     onSave: (customLabel: String?, customPack: String?, customDrawable: String?) -> Unit,
     onReset: () -> Unit
@@ -244,7 +245,7 @@ fun EditAppDialog(
 @Composable
 fun IconPickerBottomSheet(
     app: AppItem,
-    installedIconPacks: List<IconPackInfo>,
+    installedIconPacks: ImmutableList<IconPackInfo> = ImmutableList.empty(),
     iconPackManager: IconPackManager,
     onSelectDrawable: (packPackage: String, drawableName: String) -> Unit,
     onResetToDefault: () -> Unit,

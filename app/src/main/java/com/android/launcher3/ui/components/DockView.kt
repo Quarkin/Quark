@@ -54,12 +54,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
+import com.android.launcher3.model.ImmutableList
 import com.android.launcher3.repository.AppOverride
 import com.android.launcher3.util.IconThemer
 
 @Composable
 fun DockView(
-    dockApps: List<AppItem>,
+    dockApps: ImmutableList<AppItem> = ImmutableList.empty(),
     isThemedIcons: Boolean,
     showDockSearch: Boolean = true,
     overrides: Map<String, AppOverride> = emptyMap(),
