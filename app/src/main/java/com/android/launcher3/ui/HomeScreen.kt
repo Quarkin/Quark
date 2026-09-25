@@ -13,8 +13,11 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -173,6 +176,24 @@ fun HomeScreen(
         }
     }
 
+    // Native Jetpack Compose BackHandler for closing App Drawer & dialogs
+    BackHandler(enabled = isDrawerOpen) {
+        viewModel.setDrawerOpen(false)
+        viewModel.updateBackProgress(0f)
+    }
+
+    if (showSettingsDialog) {
+        BackHandler {
+            showSettingsDialog = false
+        }
+    }
+
+    if (appToEdit != null) {
+        BackHandler {
+            appToEdit = null
+        }
+    }
+
     // Android 16 Predictive Back Gesture Handler:
     // Fluidly scales and shrinks the app drawer down as user swipes back to reveal home screen
     PredictiveBackHandler(enabled = isDrawerOpen) { progressFlow ->
@@ -181,6 +202,7 @@ fun HomeScreen(
                 viewModel.updateBackProgress(backEvent.progress)
             }
             viewModel.setDrawerOpen(false)
+            viewModel.updateBackProgress(0f)
         } catch (e: CancellationException) {
             viewModel.updateBackProgress(0f)
         }
@@ -260,37 +282,51 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // Center Section: Rigid 5x5 Home Screen Icon Grid
+            // Center Section: Paginated 5x5 Home Screen Icon Grid via Android 16 Foundation HorizontalPager
+            val workspacePages = remember(pinnedApps) {
+                if (pinnedApps.isEmpty()) listOf(emptyList<AppItem>())
+                else pinnedApps.chunked(25)
+            }
+            val pagerState = rememberPagerState(pageCount = { workspacePages.size })
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(5),
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .testTag("workspace_5x5_grid"),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    userScrollEnabled = false // Rigid 5x5 single-page grid
-                ) {
-                    items(pinnedApps, key = { it.componentKey }) { app ->
-                        PixelGridIconItem(
-                            app = app,
-                            isThemed = isThemedIcons,
-                            override = overrides[app.componentKey],
-                            globalIconPackPackage = globalIconPack,
-                            globalAppFilter = globalAppFilter,
-                            iconPackManager = viewModel.iconPackManager,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            tintColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            onClick = { viewModel.launchApp(context, app) },
-                            onCustomize = { appToEdit = app },
-                            onRemoveFromHome = { viewModel.unpinApp(app) }
-                        )
+                        .testTag("workspace_pager")
+                ) { pageIndex ->
+                    val pageApps = workspacePages.getOrElse(pageIndex) { emptyList() }
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(5),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("workspace_5x5_grid_page_$pageIndex"),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        userScrollEnabled = false // Rigid 5x5 per-page grid
+                    ) {
+                        items(pageApps, key = { it.componentKey }) { app ->
+                            PixelGridIconItem(
+                                app = app,
+                                isThemed = isThemedIcons,
+                                override = overrides[app.componentKey],
+                                globalIconPackPackage = globalIconPack,
+                                globalAppFilter = globalAppFilter,
+                                iconPackManager = viewModel.iconPackManager,
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                tintColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                onClick = { viewModel.launchApp(context, app) },
+                                onCustomize = { appToEdit = app },
+                                onRemoveFromHome = { viewModel.unpinApp(app) }
+                            )
+                        }
                     }
                 }
             }

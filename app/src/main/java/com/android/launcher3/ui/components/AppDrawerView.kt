@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -103,6 +104,10 @@ fun AppDrawerView(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
+
+    BackHandler(enabled = true) {
+        onCloseDrawer()
+    }
 
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val containerColor = MaterialTheme.colorScheme.secondaryContainer

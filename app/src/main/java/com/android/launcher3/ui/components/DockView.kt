@@ -31,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -126,34 +128,9 @@ fun DockView(
         }
 
         if (showDockSearch) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Persistent, slightly taller pill-shaped Search Bar directly below the dock icons
-            PixelDockSearchBar(
-                isThemed = isThemedIcons,
-                onClick = onSearchBarClick,
-                onLensClick = {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            data = Uri.parse("googleapp://lens")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        onSearchBarClick()
-                    }
-                },
-                onVoiceClick = {
-                    try {
-                        val intent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        onSearchBarClick()
-                    }
-                }
-            )
+            LauncherSearchBar()
         } else {
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -345,6 +322,116 @@ fun DockIconItem(
 }
 
 @Composable
+fun LauncherSearchBar(
+    modifier: Modifier = Modifier
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(CircleShape)
+            .background(androidx.compose.ui.graphics.Color(0xFF303134)) // Authentic Google Search Dark Gray
+            .clickable {
+                // Main Search Click
+                try {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_WEB_SEARCH).apply {
+                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    val browserIntent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://www.google.com")
+                    ).apply { flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK }
+                    context.startActivity(browserIntent)
+                }
+            }
+            .padding(horizontal = 16.dp),
+        contentAlignment = androidx.compose.ui.Alignment.CenterStart
+    ) {
+        androidx.compose.foundation.layout.Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+        ) {
+            // The 'G' Logo
+            androidx.compose.material3.Text(
+                text = "G",
+                fontSize = 22.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                color = androidx.compose.ui.graphics.Color.White
+            )
+
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(12.dp))
+
+            // Hint Text
+            androidx.compose.material3.Text(
+                text = "Ask Gemini or search...",
+                fontSize = 16.sp,
+                color = androidx.compose.ui.graphics.Color(0xFF9AA0A6),
+                modifier = androidx.compose.ui.Modifier.weight(1f)
+            )
+
+            // 1. Gemini Icon (Sparkle)
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Rounded.AutoAwesome,
+                contentDescription = "Gemini",
+                tint = androidx.compose.ui.graphics.Color(0xFFA8C7FA), // Soft Gemini Blue/Purple
+                modifier = androidx.compose.ui.Modifier
+                    .size(24.dp)
+                    .clickable {
+                        try {
+                            // Try launching Gemini App directly
+                            val geminiIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.bard") 
+                                ?: android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://gemini.google.com"))
+                            geminiIntent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(geminiIntent)
+                        } catch (e: Exception) { e.printStackTrace() }
+                    }
+            )
+
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+
+            // 2. Google Lens Icon (Camera)
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Rounded.CameraAlt,
+                contentDescription = "Google Lens",
+                tint = androidx.compose.ui.graphics.Color(0xFF9AA0A6),
+                modifier = androidx.compose.ui.Modifier
+                    .size(24.dp)
+                    .clickable {
+                        try {
+                            val lensIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("googleapp://lens")).apply {
+                                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(lensIntent)
+                        } catch (e: Exception) { e.printStackTrace() }
+                    }
+            )
+
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+
+            // 3. Microphone Icon
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Rounded.Mic,
+                contentDescription = "Voice Search",
+                tint = androidx.compose.ui.graphics.Color(0xFF9AA0A6),
+                modifier = androidx.compose.ui.Modifier
+                    .size(24.dp)
+                    .clickable {
+                        try {
+                            val voiceIntent = android.content.Intent(android.speech.RecognizerIntent.ACTION_WEB_SEARCH).apply {
+                                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(voiceIntent)
+                        } catch (e: Exception) { e.printStackTrace() }
+                    }
+            )
+        }
+    }
+}
+
+@Composable
 fun PixelDockSearchBar(
     isThemed: Boolean,
     onClick: () -> Unit,
@@ -352,91 +439,5 @@ fun PixelDockSearchBar(
     onVoiceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val searchBgColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f)
-    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp) // Slightly taller modern Pixel pill height
-            .clip(RoundedCornerShape(28.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(28.dp)
-            )
-            .clickable(onClick = onClick)
-            .testTag("dock_search_bar"),
-        shape = RoundedCornerShape(28.dp),
-        color = searchBgColor,
-        tonalElevation = 6.dp,
-        shadowElevation = 3.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Google G Logo + Search text
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                GoogleLogoIcon(
-                    isThemed = isThemed,
-                    tintColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Text(
-                    text = "Search your phone & more\u2026",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = contentColor.copy(alpha = 0.75f)
-                    )
-                )
-            }
-
-            // Google Lens & Mic Buttons
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onLensClick)
-                        .testTag("dock_lens_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    GoogleLensIcon(
-                        tintColor = if (isThemed) MaterialTheme.colorScheme.primary else Color(0xFF4285F4),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onVoiceClick)
-                        .testTag("dock_mic_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Mic,
-                        contentDescription = "Voice search",
-                        tint = if (isThemed) MaterialTheme.colorScheme.primary else Color(0xFFEA4335),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-        }
-    }
+    LauncherSearchBar(modifier = modifier)
 }

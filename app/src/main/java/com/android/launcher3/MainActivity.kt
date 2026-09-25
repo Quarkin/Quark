@@ -1,21 +1,13 @@
 package com.android.launcher3
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import com.android.launcher3.ui.HomeScreen
-import com.android.launcher3.ui.theme.QuarkLauncherTheme
-import com.android.launcher3.viewmodel.LauncherViewModel
 
-class SecondaryDisplayLauncher : ComponentActivity() {
-
-    private val viewModel: LauncherViewModel by viewModels()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         
         window.setBackgroundDrawableResource(android.R.color.transparent)
@@ -38,20 +30,5 @@ class SecondaryDisplayLauncher : ComponentActivity() {
                 LauncherScreen() 
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        if (Intent.ACTION_MAIN == intent.action) {
-            viewModel.setDrawerOpen(false)
-        }
-    }
-}
-
-@androidx.compose.runtime.Composable
-fun LauncherScreen() {
-    val viewModel: LauncherViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    QuarkLauncherTheme {
-        HomeScreen(viewModel = viewModel)
     }
 }
