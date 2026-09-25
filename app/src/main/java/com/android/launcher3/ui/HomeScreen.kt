@@ -65,6 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +85,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.QuarkSettingsActivity
 import com.android.launcher3.iconpack.IconPackManager
 import com.android.launcher3.model.AppItem
@@ -103,7 +105,24 @@ fun HomeScreen(
     viewModel: LauncherViewModel,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcherPrefs = androidx.compose.runtime.remember { LauncherPrefs(context) }
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    // This will automatically load the last saved pack on boot
+    val currentIconPack by launcherPrefs.iconPackFlow.collectAsState(initial = "")
+
+    // When you want to apply and PERMANENTLY save a new icon pack, trigger this:
+    // coroutineScope.launch { launcherPrefs.saveIconPack("com.whicons.iconpack") }
+
+    LaunchedEffect(currentIconPack) {
+        if (currentIconPack.isNotBlank()) {
+            if (viewModel.globalIconPack.value != currentIconPack) {
+                viewModel.setGlobalIconPack(currentIconPack)
+            }
+        }
+    }
+
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
 
     val allApps by viewModel.allApps.collectAsState()
