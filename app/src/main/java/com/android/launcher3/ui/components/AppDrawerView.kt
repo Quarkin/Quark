@@ -38,13 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.PushPin
-import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.Search
+import com.android.launcher3.ui.icons.LauncherIcons as Icons
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -68,7 +62,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -105,13 +101,9 @@ fun AppDrawerView(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
 
-    BackHandler(enabled = true) {
-        onCloseDrawer()
-    }
-
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val containerColor = MaterialTheme.colorScheme.secondaryContainer
-    val tintColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val tintColor = MaterialTheme.colorScheme.primary
 
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
 
@@ -302,6 +294,7 @@ fun DrawerAppGridItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     var showContextMenu by remember { mutableStateOf(false) }
 
     Box(
@@ -313,7 +306,10 @@ fun DrawerAppGridItem(
                 .clip(RoundedCornerShape(12.dp))
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { showContextMenu = true }
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showContextMenu = true
+                    }
                 )
                 .padding(horizontal = 2.dp, vertical = 4.dp)
                 .testTag("app_item_${app.packageName}"),

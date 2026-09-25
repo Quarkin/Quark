@@ -2,15 +2,19 @@ package com.android.launcher3.viewmodel
 
 import android.app.Application
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.UserManager
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.launcher3.iconpack.IconPackInfo
@@ -35,6 +39,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         application.getSharedPreferences("quark_launcher_prefs", Context.MODE_PRIVATE)
 
     private val packageManager: PackageManager = application.packageManager
+    private val launcherApps: LauncherApps? =
+        application.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
+    private val userManager: UserManager? =
+        application.getSystemService(Context.USER_SERVICE) as? UserManager
 
     val overridesRepository = AppOverridesRepository(application)
     val iconPackManager = IconPackManager(application)
@@ -144,15 +152,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             addDataScheme("package")
         }
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                getApplication<Application>().registerReceiver(
-                    packageReceiver,
-                    filter,
-                    Context.RECEIVER_EXPORTED
-                )
-            } else {
-                getApplication<Application>().registerReceiver(packageReceiver, filter)
-            }
+            ContextCompat.registerReceiver(
+                getApplication<Application>(),
+                packageReceiver,
+                filter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
         } catch (ignored: Exception) {
         }
     }
@@ -247,21 +252,58 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun loadApps() {
         viewModelScope.launch {
             val apps = withContext(Dispatchers.IO) {
-                val intent = Intent(Intent.ACTION_MAIN, null).apply {
-                    addCategory(Intent.CATEGORY_LAUNCHER)
-                }
-                val resolveList = packageManager.queryIntentActivities(intent, 0)
-                resolveList.mapNotNull { resolveInfo ->
-                    try {
-                        val label = resolveInfo.loadLabel(packageManager).toString()
-                        val packageName = resolveInfo.activityInfo.packageName
-                        val activityName = resolveInfo.activityInfo.name
-                        val icon = resolveInfo.loadIcon(packageManager)
-                        AppItem(label, packageName, activityName, icon)
-                    } catch (e: Exception) {
-                        null
+                val appList = mutableListOf<AppItem>()
+                val lApps = launcherApps
+                val uManager = userManager
+
+                if (lApps != null && uManager != null) {
+                    val profiles = uManager.userProfiles
+                    for (userHandle in profiles) {
+                        try {
+                            val activityList = lApps.getActivityList(null, userHandle)
+                            for (activityInfo in activityList) {
+                                try {
+                                    val label = activityInfo.label.toString()
+                                    val packageName = activityInfo.applicationInfo.packageName
+                                    val activityName = activityInfo.componentName.className
+                                    val icon = activityInfo.getBadgedIcon(0)
+                                    appList.add(AppItem(label, packageName, activityName, icon, userHandle))
+                                } catch (e: Exception) {
+                                }
+                            }
+                        } catch (e: Exception) {
+                        }
                     }
-                }.distinctBy { it.componentKey }.sortedBy { it.label.lowercase() }
+                }
+
+                if (appList.isEmpty()) {
+                    // Fallback to queryIntentActivities if LauncherApps returned empty
+                    try {
+                        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+                            addCategory(Intent.CATEGORY_LAUNCHER)
+                        }
+                        val resolveList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            packageManager.queryIntentActivities(intent, 0)
+                        }
+                        resolveList.mapNotNullTo(appList) { resolveInfo ->
+                            try {
+                                val label = resolveInfo.loadLabel(packageManager).toString()
+                                val packageName = resolveInfo.activityInfo.packageName
+                                val activityName = resolveInfo.activityInfo.name
+                                val icon = resolveInfo.loadIcon(packageManager)
+                                AppItem(label, packageName, activityName, icon)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    } catch (e: Exception) {
+                    }
+                }
+
+                appList.distinctBy { it.componentKey }.sortedBy { it.label.lowercase() }
             }
 
             _allApps.value = ImmutableList(apps)
@@ -363,19 +405,41 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun launchApp(context: Context, app: AppItem) {
         try {
-            context.startActivity(app.launchIntent)
+            if (app.userHandle != null && launcherApps != null) {
+                launcherApps.startMainActivity(
+                    ComponentName(app.packageName, app.activityName),
+                    app.userHandle,
+                    null,
+                    null
+                )
+            } else {
+                context.startActivity(app.launchIntent)
+            }
         } catch (e: Exception) {
-            Toast.makeText(context, "Could not launch ${app.label}", Toast.LENGTH_SHORT).show()
+            try {
+                context.startActivity(app.launchIntent)
+            } catch (e2: Exception) {
+                Toast.makeText(context, "Could not launch ${app.label}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     fun openAppInfo(context: Context, app: AppItem) {
         try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", app.packageName, null)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (app.userHandle != null && launcherApps != null) {
+                launcherApps.startAppDetailsActivity(
+                    ComponentName(app.packageName, app.activityName),
+                    app.userHandle,
+                    null,
+                    null
+                )
+            } else {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", app.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
             }
-            context.startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
         }

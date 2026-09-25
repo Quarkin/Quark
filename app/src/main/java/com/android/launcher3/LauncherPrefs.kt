@@ -16,11 +16,13 @@ class LauncherPrefs(private val context: Context) {
         val WEATHER_TEMP = stringPreferencesKey("weather_temp")
         val LAST_FETCH = longPreferencesKey("last_fetch")
     }
-    
+
+    // Constantly streams the saved values to your UI
     val iconPackFlow: Flow<String> = context.dataStore.data.map { it[ICON_PACK] ?: "" }
     val weatherTempFlow: Flow<String> = context.dataStore.data.map { it[WEATHER_TEMP] ?: "..." }
     val lastFetchFlow: Flow<Long> = context.dataStore.data.map { it[LAST_FETCH] ?: 0L }
-    
+
+    // Writes the new values to the physical disk
     suspend fun saveIconPack(packageName: String) {
         context.dataStore.edit { prefs ->
             prefs[ICON_PACK] = packageName

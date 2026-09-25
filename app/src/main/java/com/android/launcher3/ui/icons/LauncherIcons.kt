@@ -1,0 +1,365 @@
+package com.android.launcher3.ui.icons
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathBuilder
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.unit.dp
+
+private fun createIcon(name: String, block: PathBuilder.() -> Unit): ImageVector {
+    return ImageVector.Builder(
+        name = name,
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).path(
+        fill = SolidColor(Color.White),
+        pathBuilder = block
+    ).build()
+}
+
+object LauncherIcons {
+    object Rounded {
+        val Edit = createIcon("Edit") {
+            moveTo(3f, 17.25f)
+            verticalLineTo(21f)
+            horizontalLineTo(6.75f)
+            lineTo(17.81f, 9.94f)
+            lineTo(14.06f, 6.19f)
+            close()
+            moveTo(20.71f, 7.04f)
+            arcTo(0.996f, 0.996f, 0f, false, false, 20.71f, 5.63f)
+            lineTo(18.37f, 3.29f)
+            arcTo(0.996f, 0.996f, 0f, false, false, 16.96f, 3.29f)
+            lineTo(15.13f, 5.12f)
+            lineTo(18.88f, 8.87f)
+            close()
+        }
+        val Search = createIcon("Search") {
+            moveTo(15.5f, 14f)
+            horizontalLineTo(14.71f)
+            lineTo(14.43f, 13.73f)
+            arcTo(6.5f, 6.5f, 0f, true, false, 16f, 9.5f)
+            arcTo(6.5f, 6.5f, 0f, true, false, 9.5f, 16f)
+            arcTo(6.47f, 6.47f, 0f, false, false, 13.73f, 14.43f)
+            lineTo(14f, 14.71f)
+            verticalLineTo(15.5f)
+            lineTo(19f, 20.49f)
+            lineTo(20.49f, 19f)
+            close()
+            moveTo(9.5f, 14f)
+            arcTo(4.5f, 4.5f, 0f, true, true, 14f, 9.5f)
+            arcTo(4.5f, 4.5f, 0f, false, true, 9.5f, 14f)
+            close()
+        }
+        val Close = createIcon("Close") {
+            moveTo(19f, 6.41f)
+            lineTo(17.59f, 5f)
+            lineTo(12f, 10.59f)
+            lineTo(6.41f, 5f)
+            lineTo(5f, 6.41f)
+            lineTo(10.59f, 12f)
+            lineTo(5f, 17.59f)
+            lineTo(6.41f, 19f)
+            lineTo(12f, 13.41f)
+            lineTo(17.59f, 19f)
+            lineTo(19f, 17.59f)
+            lineTo(13.41f, 12f)
+            close()
+        }
+        val Clear = Close
+        val Add = createIcon("Add") {
+            moveTo(19f, 13f)
+            horizontalLineTo(13f)
+            verticalLineTo(19f)
+            horizontalLineTo(11f)
+            verticalLineTo(13f)
+            horizontalLineTo(5f)
+            verticalLineTo(11f)
+            horizontalLineTo(11f)
+            verticalLineTo(5f)
+            horizontalLineTo(13f)
+            verticalLineTo(11f)
+            horizontalLineTo(19f)
+            close()
+        }
+        val AutoAwesome = createIcon("AutoAwesome") {
+            moveTo(19f, 9f)
+            lineTo(20.25f, 6.25f)
+            lineTo(23f, 5f)
+            lineTo(20.25f, 3.75f)
+            lineTo(19f, 1f)
+            lineTo(17.75f, 3.75f)
+            lineTo(15f, 5f)
+            lineTo(17.75f, 6.25f)
+            close()
+            moveTo(9f, 18f)
+            lineTo(6.5f, 12.5f)
+            lineTo(1f, 10f)
+            lineTo(6.5f, 7.5f)
+            lineTo(9f, 2f)
+            lineTo(11.5f, 7.5f)
+            lineTo(17f, 10f)
+            lineTo(11.5f, 12.5f)
+            close()
+        }
+        val CameraAlt = createIcon("CameraAlt") {
+            moveTo(12f, 12f)
+            arcTo(3.2f, 3.2f, 0f, true, false, 12f, 18.4f)
+            arcTo(3.2f, 3.2f, 0f, true, false, 12f, 12f)
+            close()
+            moveTo(9f, 2f)
+            lineTo(7.17f, 4f)
+            horizontalLineTo(4f)
+            arcTo(2f, 2f, 0f, false, false, 2f, 6f)
+            verticalLineTo(18f)
+            arcTo(2f, 2f, 0f, false, false, 4f, 20f)
+            horizontalLineTo(20f)
+            arcTo(2f, 2f, 0f, false, false, 22f, 18f)
+            verticalLineTo(6f)
+            arcTo(2f, 2f, 0f, false, false, 20f, 4f)
+            horizontalLineTo(16.83f)
+            lineTo(15f, 2f)
+            close()
+        }
+        val Mic = createIcon("Mic") {
+            moveTo(12f, 14f)
+            arcTo(3f, 3f, 0f, false, false, 15f, 11f)
+            verticalLineTo(5f)
+            arcTo(3f, 3f, 0f, false, false, 9f, 5f)
+            verticalLineTo(11f)
+            arcTo(3f, 3f, 0f, false, false, 12f, 14f)
+            close()
+            moveTo(19f, 11f)
+            arcTo(7f, 7f, 0f, false, true, 5f, 11f)
+            horizontalLineTo(3f)
+            arcTo(9f, 9f, 0f, false, false, 11f, 19.93f)
+            verticalLineTo(22f)
+            horizontalLineTo(13f)
+            verticalLineTo(19.93f)
+            arcTo(9f, 9f, 0f, false, false, 21f, 11f)
+            close()
+        }
+        val Settings = createIcon("Settings") {
+            moveTo(19.14f, 12.94f)
+            arcTo(1.6f, 1.6f, 0f, false, false, 19.5f, 11f)
+            arcTo(1.6f, 1.6f, 0f, false, false, 19.14f, 9.06f)
+            lineTo(17.04f, 8.22f)
+            arcTo(7.1f, 7.1f, 0f, false, false, 15.78f, 6.96f)
+            verticalLineTo(4.72f)
+            horizontalLineTo(12.22f)
+            verticalLineTo(6.96f)
+            arcTo(7.1f, 7.1f, 0f, false, false, 10.96f, 8.22f)
+            lineTo(8.86f, 9.06f)
+            arcTo(1.6f, 1.6f, 0f, false, false, 8.5f, 11f)
+            arcTo(1.6f, 1.6f, 0f, false, false, 8.86f, 12.94f)
+            lineTo(10.96f, 13.78f)
+            arcTo(7.1f, 7.1f, 0f, false, false, 12.22f, 15.04f)
+            verticalLineTo(17.28f)
+            horizontalLineTo(15.78f)
+            verticalLineTo(15.04f)
+            arcTo(7.1f, 7.1f, 0f, false, false, 17.04f, 13.78f)
+            close()
+            moveTo(14f, 11f)
+            arcTo(2f, 2f, 0f, true, true, 12f, 9f)
+            arcTo(2f, 2f, 0f, false, true, 14f, 11f)
+            close()
+        }
+        val Wallpaper = createIcon("Wallpaper") {
+            moveTo(4f, 4f)
+            horizontalLineTo(20f)
+            verticalLineTo(20f)
+            horizontalLineTo(4f)
+            close()
+            moveTo(6f, 18f)
+            horizontalLineTo(18f)
+            lineTo(14.5f, 13.5f)
+            lineTo(11.5f, 17.5f)
+            lineTo(9.5f, 15f)
+            close()
+        }
+        val Palette = createIcon("Palette") {
+            moveTo(12f, 3f)
+            arcTo(9f, 9f, 0f, false, false, 3f, 12f)
+            arcTo(9f, 9f, 0f, false, false, 12f, 21f)
+            arcTo(2.5f, 2.5f, 0f, false, false, 14.5f, 18.5f)
+            arcTo(1f, 1f, 0f, false, true, 15.5f, 17.5f)
+            horizontalLineTo(17f)
+            arcTo(4f, 4f, 0f, false, false, 21f, 13.5f)
+            arcTo(9f, 9f, 0f, false, false, 12f, 3f)
+            close()
+        }
+        val Lock = createIcon("Lock") {
+            moveTo(18f, 8f)
+            horizontalLineTo(17f)
+            verticalLineTo(6f)
+            arcTo(5f, 5f, 0f, false, false, 7f, 6f)
+            verticalLineTo(8f)
+            horizontalLineTo(6f)
+            arcTo(2f, 2f, 0f, false, false, 4f, 10f)
+            verticalLineTo(20f)
+            arcTo(2f, 2f, 0f, false, false, 6f, 22f)
+            horizontalLineTo(18f)
+            arcTo(2f, 2f, 0f, false, false, 20f, 20f)
+            verticalLineTo(10f)
+            arcTo(2f, 2f, 0f, false, false, 18f, 8f)
+            close()
+            moveTo(9f, 6f)
+            arcTo(3f, 3f, 0f, false, true, 15f, 6f)
+            verticalLineTo(8f)
+            horizontalLineTo(9f)
+            close()
+        }
+        val Restore = createIcon("Restore") {
+            moveTo(13f, 3f)
+            arcTo(9f, 9f, 0f, false, false, 4f, 7.3f)
+            verticalLineTo(4f)
+            horizontalLineTo(2f)
+            verticalLineTo(10f)
+            horizontalLineTo(8f)
+            verticalLineTo(8f)
+            horizontalLineTo(5.27f)
+            arcTo(7f, 7f, 0f, true, true, 5f, 13f)
+            horizontalLineTo(3f)
+            arcTo(9f, 9f, 0f, true, false, 13f, 3f)
+            close()
+            moveTo(12f, 8f)
+            verticalLineTo(13f)
+            lineTo(16.2f, 15.5f)
+            lineTo(17f, 14.2f)
+            lineTo(13.5f, 12.1f)
+            verticalLineTo(8f)
+            close()
+        }
+        val Check = createIcon("Check") {
+            moveTo(9f, 16.17f)
+            lineTo(4.83f, 12f)
+            lineTo(3.41f, 13.41f)
+            lineTo(9f, 19f)
+            lineTo(21f, 7f)
+            lineTo(19.59f, 5.59f)
+            close()
+        }
+        val Info = createIcon("Info") {
+            moveTo(12f, 2f)
+            arcTo(10f, 10f, 0f, true, false, 12f, 22f)
+            arcTo(10f, 10f, 0f, true, false, 12f, 2f)
+            close()
+            moveTo(13f, 17f)
+            horizontalLineTo(11f)
+            verticalLineTo(11f)
+            horizontalLineTo(13f)
+            close()
+            moveTo(13f, 9f)
+            horizontalLineTo(11f)
+            verticalLineTo(7f)
+            horizontalLineTo(13f)
+            close()
+        }
+    }
+    object Outlined {
+        val Edit = Rounded.Edit
+        val Delete = createIcon("Delete") {
+            moveTo(16f, 9f)
+            verticalLineTo(19f)
+            horizontalLineTo(8f)
+            verticalLineTo(9f)
+            close()
+            moveTo(14.5f, 3f)
+            lineTo(13.5f, 2f)
+            horizontalLineTo(10.5f)
+            lineTo(9.5f, 3f)
+            horizontalLineTo(6f)
+            verticalLineTo(5f)
+            horizontalLineTo(18f)
+            verticalLineTo(3f)
+            close()
+        }
+        val PushPin = createIcon("PushPin") {
+            moveTo(16f, 9f)
+            verticalLineTo(4f)
+            lineTo(17f, 4f)
+            verticalLineTo(2f)
+            horizontalLineTo(7f)
+            verticalLineTo(4f)
+            lineTo(8f, 4f)
+            verticalLineTo(9f)
+            lineTo(6f, 11f)
+            verticalLineTo(13f)
+            horizontalLineTo(11f)
+            verticalLineTo(22f)
+            lineTo(12f, 23f)
+            lineTo(13f, 22f)
+            verticalLineTo(13f)
+            horizontalLineTo(18f)
+            verticalLineTo(11f)
+            close()
+        }
+        val Info = Rounded.Info
+        val HourglassEmpty = createIcon("HourglassEmpty") {
+            moveTo(6f, 2f)
+            verticalLineTo(8f)
+            lineTo(10f, 12f)
+            lineTo(6f, 16f)
+            verticalLineTo(22f)
+            horizontalLineTo(18f)
+            verticalLineTo(16f)
+            lineTo(14f, 12f)
+            lineTo(18f, 8f)
+            verticalLineTo(2f)
+            close()
+            moveTo(16f, 16.5f)
+            verticalLineTo(20f)
+            horizontalLineTo(8f)
+            verticalLineTo(16.5f)
+            lineTo(12f, 12.5f)
+            close()
+            moveTo(12f, 11.5f)
+            lineTo(8f, 7.5f)
+            verticalLineTo(4f)
+            horizontalLineTo(16f)
+            verticalLineTo(7.5f)
+            close()
+        }
+        val Widgets = createIcon("Widgets") {
+            moveTo(13f, 13f)
+            verticalLineTo(21f)
+            horizontalLineTo(21f)
+            verticalLineTo(13f)
+            close()
+            moveTo(3f, 13f)
+            verticalLineTo(21f)
+            horizontalLineTo(11f)
+            verticalLineTo(13f)
+            close()
+            moveTo(3f, 3f)
+            verticalLineTo(11f)
+            horizontalLineTo(11f)
+            verticalLineTo(3f)
+            close()
+            moveTo(16.66f, 1.69f)
+            lineTo(11f, 7.34f)
+            lineTo(16.66f, 13f)
+            lineTo(22.31f, 7.34f)
+            close()
+        }
+    }
+    object AutoMirrored {
+        object Rounded {
+            val ArrowBack = createIcon("ArrowBack") {
+                moveTo(20f, 11f)
+                lineTo(7.83f, 11f)
+                lineTo(13.42f, 5.41f)
+                lineTo(12f, 4f)
+                lineTo(4f, 12f)
+                lineTo(12f, 20f)
+                lineTo(13.41f, 18.59f)
+                lineTo(7.83f, 13f)
+                lineTo(20f, 13f)
+                close()
+            }
+        }
+    }
+}

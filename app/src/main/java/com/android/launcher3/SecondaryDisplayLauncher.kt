@@ -1,18 +1,20 @@
 package com.android.launcher3
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.android.launcher3.ui.HomeScreen
 import com.android.launcher3.ui.theme.QuarkLauncherTheme
 import com.android.launcher3.viewmodel.LauncherViewModel
 
 class SecondaryDisplayLauncher : ComponentActivity() {
-
     private val viewModel: LauncherViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,38 +22,21 @@ class SecondaryDisplayLauncher : ComponentActivity() {
         
         window.setBackgroundDrawableResource(android.R.color.transparent)
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
-
-        // Enforce Android 16 transparent system bars
+        
         enableEdgeToEdge(
-            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
 
         setContent {
-            // Wrap the launcher UI in a Surface that consumes Window Insets correctly
-            androidx.compose.material3.Surface(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                color = androidx.compose.ui.graphics.Color.Transparent
-            ) {
-                // Your main launcher UI (Smartspace, Dock, etc.) goes here
-                // Ensure the parent container uses Modifier.systemBarsPadding() or handles insets manually
-                LauncherScreen() 
+            QuarkLauncherTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Transparent
+                ) {
+                    HomeScreen(viewModel = viewModel)
+                }
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        if (Intent.ACTION_MAIN == intent.action) {
-            viewModel.setDrawerOpen(false)
-        }
-    }
-}
-
-@androidx.compose.runtime.Composable
-fun LauncherScreen() {
-    val viewModel: LauncherViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    QuarkLauncherTheme {
-        HomeScreen(viewModel = viewModel)
     }
 }

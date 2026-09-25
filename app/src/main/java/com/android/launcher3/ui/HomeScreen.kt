@@ -18,6 +18,9 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -50,13 +53,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Wallpaper
+import com.android.launcher3.ui.icons.LauncherIcons as Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -161,11 +158,12 @@ fun HomeScreen(
         }
         val filter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
-            } else {
-                context.registerReceiver(receiver, filter)
-            }
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                filter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
         } catch (ignored: Exception) {
         }
         onDispose {
@@ -174,12 +172,6 @@ fun HomeScreen(
             } catch (ignored: Exception) {
             }
         }
-    }
-
-    // Native Jetpack Compose BackHandler for closing App Drawer & dialogs
-    BackHandler(enabled = isDrawerOpen) {
-        viewModel.setDrawerOpen(false)
-        viewModel.updateBackProgress(0f)
     }
 
     if (showSettingsDialog) {
@@ -282,7 +274,6 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // Center Section: Paginated 5x5 Home Screen Icon Grid via Android 16 Foundation HorizontalPager
             val workspacePages = remember(pinnedApps) {
                 if (pinnedApps.isEmpty()) listOf(emptyList<AppItem>())
                 else pinnedApps.chunked(25)
@@ -310,7 +301,7 @@ fun HomeScreen(
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        userScrollEnabled = false // Rigid 5x5 per-page grid
+                        userScrollEnabled = false // Rigid 5x5 single-page grid
                     ) {
                         items(pageApps, key = { it.componentKey }) { app ->
                             PixelGridIconItem(
@@ -523,6 +514,7 @@ fun PixelGridIconItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     var showContextMenu by remember { mutableStateOf(false) }
 
     Box(
@@ -534,7 +526,10 @@ fun PixelGridIconItem(
                 .clip(RoundedCornerShape(12.dp))
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { showContextMenu = true }
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showContextMenu = true
+                    }
                 )
                 .padding(vertical = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.UserHandle
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -15,12 +16,13 @@ data class AppItem(
     val label: String,
     val packageName: String,
     val activityName: String,
-    val icon: Drawable? = null
+    val icon: Drawable? = null,
+    val userHandle: UserHandle? = null
 ) {
     private var cachedBitmap: ImageBitmap? = null
 
     val componentKey: String
-        get() = "$packageName/$activityName"
+        get() = if (userHandle != null) "$packageName/$activityName#$userHandle" else "$packageName/$activityName"
 
     val launchIntent: Intent
         get() = Intent(Intent.ACTION_MAIN).apply {

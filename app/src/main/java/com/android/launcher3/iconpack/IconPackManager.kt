@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.os.Build
 import android.content.res.XmlResourceParser
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -89,7 +90,12 @@ class IconPackManager(private val context: Context) {
 
         for (action in ICON_PACK_INTENTS) {
             val intent = Intent(action)
-            val list: List<ResolveInfo> = packageManager.queryIntentActivities(intent, 0)
+            val list: List<ResolveInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.queryIntentActivities(intent, 0)
+            }
             for (info in list) {
                 val pkg = info.activityInfo.packageName
                 if (pkg != context.packageName && !result.containsKey(pkg)) {

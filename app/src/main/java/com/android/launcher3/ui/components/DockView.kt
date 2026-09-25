@@ -27,13 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.CameraAlt
-import androidx.compose.material.icons.rounded.Mic
+import com.android.launcher3.ui.icons.LauncherIcons as Icons
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -49,7 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -77,7 +73,7 @@ fun DockView(
 ) {
     val context = LocalContext.current
     val containerColor = MaterialTheme.colorScheme.secondaryContainer
-    val tintColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val tintColor = MaterialTheme.colorScheme.primary
 
     Column(
         modifier = modifier
@@ -154,6 +150,7 @@ fun DockIconItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     var showContextMenu by remember { mutableStateOf(false) }
 
     Box(
@@ -167,6 +164,7 @@ fun DockIconItem(
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (app != null) {
                             showContextMenu = true
                         }
@@ -374,7 +372,7 @@ fun LauncherSearchBar(
 
             // 1. Gemini Icon (Sparkle)
             androidx.compose.material3.Icon(
-                imageVector = androidx.compose.material.icons.Icons.Rounded.AutoAwesome,
+                imageVector = Icons.Rounded.AutoAwesome,
                 contentDescription = "Gemini",
                 tint = androidx.compose.ui.graphics.Color(0xFFA8C7FA), // Soft Gemini Blue/Purple
                 modifier = androidx.compose.ui.Modifier
@@ -394,7 +392,7 @@ fun LauncherSearchBar(
 
             // 2. Google Lens Icon (Camera)
             androidx.compose.material3.Icon(
-                imageVector = androidx.compose.material.icons.Icons.Rounded.CameraAlt,
+                imageVector = Icons.Rounded.CameraAlt,
                 contentDescription = "Google Lens",
                 tint = androidx.compose.ui.graphics.Color(0xFF9AA0A6),
                 modifier = androidx.compose.ui.Modifier
@@ -413,7 +411,7 @@ fun LauncherSearchBar(
 
             // 3. Microphone Icon
             androidx.compose.material3.Icon(
-                imageVector = androidx.compose.material.icons.Icons.Rounded.Mic,
+                imageVector = Icons.Rounded.Mic,
                 contentDescription = "Voice Search",
                 tint = androidx.compose.ui.graphics.Color(0xFF9AA0A6),
                 modifier = androidx.compose.ui.Modifier
