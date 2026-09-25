@@ -248,7 +248,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     } catch (e: Exception) {
                         null
                     }
-                }.sortedBy { it.label.lowercase() }
+                }.distinctBy { it.componentKey }.sortedBy { it.label.lowercase() }
             }
 
             _allApps.value = apps

@@ -94,7 +94,7 @@ fun EditAppDialog(
     var showIconPicker by remember { mutableStateOf(false) }
 
     // Resolve preview bitmap
-    val previewBitmap: ImageBitmap? = remember(selectedPack, selectedDrawable) {
+    val previewBitmap: ImageBitmap? = remember(selectedPack, selectedDrawable, app.componentKey, app.icon) {
         if (!selectedPack.isNullOrBlank() && !selectedDrawable.isNullOrBlank()) {
             val d = iconPackManager.loadDrawable(selectedPack!!, selectedDrawable!!)
             IconThemer.getStandardBitmap("$selectedPack/$selectedDrawable", d, 144)
@@ -269,8 +269,12 @@ fun IconPickerBottomSheet(
     }
 
     val filteredDrawables = remember(drawables, filterQuery) {
-        if (filterQuery.isBlank()) drawables
-        else drawables.filter { it.contains(filterQuery, ignoreCase = true) }
+        val list = if (filterQuery.isBlank()) {
+            drawables
+        } else {
+            drawables.filter { it.contains(filterQuery, ignoreCase = true) }
+        }
+        list.distinct().sorted()
     }
 
     ModalBottomSheet(
@@ -381,7 +385,7 @@ fun IconPickerBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredDrawables, key = { it }) { drawableName ->
+                    items(filteredDrawables, key = { drawableName -> "${pack}:$drawableName" }) { drawableName ->
                         IconPackItemCell(
                             packPackage = pack,
                             drawableName = drawableName,
@@ -419,11 +423,6 @@ fun IconPackItemCell(
     iconPackManager: IconPackManager,
     onClick: () -> Unit
 ) {
-    val bitmap = remember(packPackage, drawableName) {
-        val d = iconPackManager.loadDrawable(packPackage, drawableName)
-        IconThemer.getStandardBitmap("$packPackage/$drawableName", d, 128)
-    }
-
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
@@ -431,28 +430,11 @@ fun IconPackItemCell(
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap,
-                contentDescription = drawableName,
-                modifier = Modifier.size(48.dp)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Palette,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
+        AsyncPackIcon(
+            drawableName = drawableName,
+            iconPackPackage = packPackage,
+            modifier = Modifier.size(48.dp)
+        )
 
         Spacer(modifier = Modifier.height(4.dp))
 

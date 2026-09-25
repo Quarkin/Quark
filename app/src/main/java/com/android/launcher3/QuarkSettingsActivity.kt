@@ -48,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -110,6 +111,24 @@ fun SettingsScreen(
 
     var installedPacks by remember { mutableStateOf<List<IconPackInfo>>(emptyList()) }
     var showIconPackDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+            when (key) {
+                "double_tap_to_sleep" -> doubleTapToSleep = sp.getBoolean("double_tap_to_sleep", true)
+                "themed_icons" -> themedIcons = sp.getBoolean("themed_icons", true)
+                "show_dock_search" -> showDockSearch = sp.getBoolean("show_dock_search", true)
+                "global_icon_pack" -> globalIconPack = sp.getString("global_icon_pack", null)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            try {
+                prefs.unregisterOnSharedPreferenceChangeListener(listener)
+            } catch (ignored: Exception) {
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         installedPacks = iconPackManager.getInstalledIconPacks()

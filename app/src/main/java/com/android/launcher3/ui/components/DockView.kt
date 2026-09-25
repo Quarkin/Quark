@@ -199,24 +199,37 @@ fun DockIconItem(
             contentAlignment = Alignment.Center
         ) {
             if (app != null) {
-                val bitmap = if (iconPackManager != null) {
-                    IconThemer.getRenderedIcon(
-                        app = app,
-                        override = override,
-                        globalIconPackPackage = globalIconPackPackage,
-                        globalAppFilter = globalAppFilter,
-                        iconPackManager = iconPackManager,
-                        isThemedIcons = isThemed,
-                        containerColor = containerColor,
-                        tintColor = tintColor
-                    )
-                } else if (isThemed) {
-                    IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
-                } else {
-                    IconThemer.getStandardBitmap(app.componentKey, app.icon)
+                val bitmap = remember(
+                    app,
+                    override,
+                    globalIconPackPackage,
+                    globalAppFilter,
+                    iconPackManager,
+                    isThemed,
+                    containerColor,
+                    tintColor
+                ) {
+                    if (iconPackManager != null) {
+                        IconThemer.getRenderedIcon(
+                            app = app,
+                            override = override,
+                            globalIconPackPackage = globalIconPackPackage,
+                            globalAppFilter = globalAppFilter,
+                            iconPackManager = iconPackManager,
+                            isThemedIcons = isThemed,
+                            containerColor = containerColor,
+                            tintColor = tintColor
+                        )
+                    } else if (isThemed) {
+                        IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
+                    } else {
+                        IconThemer.getStandardBitmap(app.componentKey, app.icon)
+                    }
                 }
 
-                val renderedLabel = IconThemer.getRenderedLabel(app, override)
+                val renderedLabel = remember(app, override) {
+                    IconThemer.getRenderedLabel(app, override)
+                }
 
                 if (bitmap != null) {
                     Image(

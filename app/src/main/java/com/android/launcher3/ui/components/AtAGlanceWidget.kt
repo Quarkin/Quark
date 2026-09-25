@@ -1,7 +1,9 @@
 package com.android.launcher3.ui.components
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.provider.CalendarContract
 import androidx.compose.foundation.clickable
@@ -23,7 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +49,32 @@ fun AtAGlanceWidget(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val now = remember { Date() }
+    var now by remember { mutableStateOf(Date()) }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                now = Date()
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_TICK)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            addAction(Intent.ACTION_DATE_CHANGED)
+        }
+        try {
+            context.registerReceiver(receiver, filter)
+        } catch (ignored: Exception) {
+        }
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (ignored: Exception) {
+            }
+        }
+    }
+
     val dayFormat = remember { SimpleDateFormat("EEEE, MMM d", Locale.getDefault()) }
 
     val textShadow = remember {

@@ -3,8 +3,6 @@
 package com.android.launcher3.ui.components
 
 import android.content.Intent
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -66,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -110,8 +107,8 @@ fun AppDrawerView(
     val tintColor = MaterialTheme.colorScheme.onSecondaryContainer
 
     // Predictive back shrinkage & rounding
-    val scale = 1f - (backProgress * 0.12f)
-    val cornerRadius = (backProgress * 32f).dp
+    val scale = remember(backProgress) { 1f - (backProgress * 0.12f) }
+    val cornerRadius = remember(backProgress) { (backProgress * 32f).dp }
 
     Surface(
         modifier = modifier
@@ -121,15 +118,8 @@ fun AppDrawerView(
                 scaleY = scale
                 clip = true
                 shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    try {
-                        renderEffect = RenderEffect.createBlurEffect(
-                            15f, 15f, Shader.TileMode.CLAMP
-                        ).asComposeRenderEffect()
-                    } catch (ignored: Exception) {
-                    }
-                }
             }
+            .background(androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .pointerInput(Unit) {
                 var dragSum = 0f
                 detectVerticalDragGestures(
@@ -146,7 +136,7 @@ fun AppDrawerView(
                 )
             }
             .testTag("app_drawer_surface"),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        color = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         tonalElevation = 6.dp
     ) {
         Column(
@@ -257,12 +247,17 @@ fun AppDrawerView(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(apps, key = { it.componentKey }) { app ->
-                    val isPinned = pinnedKeys.contains(app.componentKey)
+                    val isPinned = remember(pinnedKeys, app.componentKey) {
+                        pinnedKeys.contains(app.componentKey)
+                    }
+                    val override = remember(overrides, app.componentKey) {
+                        overrides[app.componentKey]
+                    }
                     DrawerAppGridItem(
                         app = app,
                         isThemed = isThemedIcons,
                         isPinned = isPinned,
-                        override = overrides[app.componentKey],
+                        override = override,
                         globalIconPackPackage = globalIconPackPackage,
                         globalAppFilter = globalAppFilter,
                         iconPackManager = iconPackManager,
@@ -312,24 +307,37 @@ fun DrawerAppGridItem(
                 .testTag("app_item_${app.packageName}"),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val bitmap = if (iconPackManager != null) {
-                IconThemer.getRenderedIcon(
-                    app = app,
-                    override = override,
-                    globalIconPackPackage = globalIconPackPackage,
-                    globalAppFilter = globalAppFilter,
-                    iconPackManager = iconPackManager,
-                    isThemedIcons = isThemed,
-                    containerColor = containerColor,
-                    tintColor = tintColor
-                )
-            } else if (isThemed) {
-                IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
-            } else {
-                IconThemer.getStandardBitmap(app.componentKey, app.icon)
+            val bitmap = remember(
+                app,
+                override,
+                globalIconPackPackage,
+                globalAppFilter,
+                iconPackManager,
+                isThemed,
+                containerColor,
+                tintColor
+            ) {
+                if (iconPackManager != null) {
+                    IconThemer.getRenderedIcon(
+                        app = app,
+                        override = override,
+                        globalIconPackPackage = globalIconPackPackage,
+                        globalAppFilter = globalAppFilter,
+                        iconPackManager = iconPackManager,
+                        isThemedIcons = isThemed,
+                        containerColor = containerColor,
+                        tintColor = tintColor
+                    )
+                } else if (isThemed) {
+                    IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
+                } else {
+                    IconThemer.getStandardBitmap(app.componentKey, app.icon)
+                }
             }
 
-            val renderedLabel = IconThemer.getRenderedLabel(app, override)
+            val renderedLabel = remember(app, override) {
+                IconThemer.getRenderedLabel(app, override)
+            }
 
             if (bitmap != null) {
                 Image(

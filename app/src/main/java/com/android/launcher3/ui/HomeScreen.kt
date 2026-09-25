@@ -5,8 +5,12 @@
 
 package com.android.launcher3.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.PredictiveBackHandler
@@ -60,6 +64,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -118,6 +123,35 @@ fun HomeScreen(
 
     var appToEdit by remember { mutableStateOf<AppItem?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_CLOSE_SYSTEM_DIALOGS) {
+                    val reason = intent.getStringExtra("reason")
+                    if (reason != "recentapps") {
+                        viewModel.setDrawerOpen(false)
+                        showSettingsDialog = false
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+            } else {
+                context.registerReceiver(receiver, filter)
+            }
+        } catch (ignored: Exception) {
+        }
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (ignored: Exception) {
+            }
+        }
+    }
 
     // Android 16 Predictive Back Gesture Handler:
     // Fluidly scales and shrinks the app drawer down as user swipes back to reveal home screen
@@ -436,24 +470,37 @@ fun PixelGridIconItem(
                 .padding(vertical = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val bitmap = if (iconPackManager != null) {
-                IconThemer.getRenderedIcon(
-                    app = app,
-                    override = override,
-                    globalIconPackPackage = globalIconPackPackage,
-                    globalAppFilter = globalAppFilter,
-                    iconPackManager = iconPackManager,
-                    isThemedIcons = isThemed,
-                    containerColor = containerColor,
-                    tintColor = tintColor
-                )
-            } else if (isThemed) {
-                IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
-            } else {
-                IconThemer.getStandardBitmap(app.componentKey, app.icon)
+            val bitmap = remember(
+                app,
+                override,
+                globalIconPackPackage,
+                globalAppFilter,
+                iconPackManager,
+                isThemed,
+                containerColor,
+                tintColor
+            ) {
+                if (iconPackManager != null) {
+                    IconThemer.getRenderedIcon(
+                        app = app,
+                        override = override,
+                        globalIconPackPackage = globalIconPackPackage,
+                        globalAppFilter = globalAppFilter,
+                        iconPackManager = iconPackManager,
+                        isThemedIcons = isThemed,
+                        containerColor = containerColor,
+                        tintColor = tintColor
+                    )
+                } else if (isThemed) {
+                    IconThemer.getThemedBitmap(app.componentKey, app.icon, containerColor, tintColor)
+                } else {
+                    IconThemer.getStandardBitmap(app.componentKey, app.icon)
+                }
             }
 
-            val renderedLabel = IconThemer.getRenderedLabel(app, override)
+            val renderedLabel = remember(app, override) {
+                IconThemer.getRenderedLabel(app, override)
+            }
 
             if (bitmap != null) {
                 Image(

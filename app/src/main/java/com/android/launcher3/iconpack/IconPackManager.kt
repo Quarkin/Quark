@@ -144,3 +144,8 @@ class IconPackManager(private val context: Context) {
         }
     }
 }
+
+object GlobalIconCache {
+    val resourceCache = mutableMapOf<String, android.content.res.Resources>()
+    val bitmapCache = android.util.LruCache<String, android.graphics.drawable.Drawable>((Runtime.getRuntime().maxMemory() / 1024).toInt() / 8)
+}
